@@ -1,10 +1,18 @@
-# Smart RCA System — Supplier Module Query Categorization Assistant
+# Smart RCA System
 
-Read-only Jira ingestion + LLM-based categorization + reporting dashboard for
-Supplier-module support tickets. Implements the BRD/FSD "Supplier Module Query
-Categorization Assistant (Jira-Integrated)".
+Two related but independent tools for Supplier-module production support:
 
-## Architecture
+1. **`backend/` + `dashboard/`** — the Supplier Module Query Categorization
+   Assistant: read-only Jira ingestion + LLM-based categorization + reporting
+   dashboard. Implements the BRD/FSD "Supplier Module Query Categorization
+   Assistant (Jira-Integrated)". Answers *"what kinds of tickets are coming in?"*
+2. **`rca-assistant/`** — an agentic RCA triage pipeline that automates the
+   manual diagnostic sequence an engineer follows on a single ticket (Build
+   Portal → MongoDB → Camunda → New Relic → codebase search), producing a
+   structured root-cause report. Answers *"why did this specific ticket happen,
+   and who should fix it?"* See `rca-assistant/README.md` for details.
+
+## Categorization Assistant architecture
 
 ```
                     INGESTION PIPELINE
@@ -31,8 +39,9 @@ Categorization Assistant (Jira-Integrated)".
 ## Repository layout
 
 ```
-backend/     Express API, Jira ingestion, Claude categorization, aggregation, CLI scripts
-dashboard/   Angular dashboard (charts + ticket table + CSV export)
+backend/         Express API, Jira ingestion, Claude categorization, aggregation, CLI scripts
+dashboard/       Angular dashboard (charts + ticket table + CSV export)
+rca-assistant/   Agentic RCA triage pipeline (orchestrator + 5 diagnostic stage agents) - see its own README
 .github/workflows/sync-and-categorize.yml   Scheduled batch sync + categorize job
 ```
 
