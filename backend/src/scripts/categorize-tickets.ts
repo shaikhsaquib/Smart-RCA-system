@@ -1,9 +1,10 @@
-import { connectDb } from '../config/db';
+import { connectMongoIfConfigured, requireMongoOrExit } from '../config/db';
 import { categorizeUncategorizedTickets } from '../services/categorization';
 import mongoose from 'mongoose';
 
 async function main() {
-  await connectDb();
+  await connectMongoIfConfigured();
+  requireMongoOrExit('categorize-tickets');
   const result = await categorizeUncategorizedTickets();
   console.log('Categorization complete:', result);
   await mongoose.disconnect();

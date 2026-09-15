@@ -31,7 +31,8 @@ Two related but independent tools for Supplier-module production support:
 | Jira integration | Jira REST API (JQL search), read-only | Your existing Jira license |
 | Backend | Node.js + Express + TypeScript (`backend/`) | Free |
 | Classification | Claude API (`@anthropic-ai/sdk`), tool-use for structured output | Free trial credits, then pay-as-you-go (Haiku is cheap) |
-| Storage | MongoDB Atlas free tier (M0) | Free |
+| Storage | MongoDB Atlas free tier (M0), Atlas Vector Search for the Jira KB | Free |
+| Embeddings (Jira KB) | Voyage AI (default) or OpenAI, behind a swappable interface | Pay-as-you-go, small volume |
 | Dashboard | Angular + Chart.js (`dashboard/`) | Free |
 | Scheduling | GitHub Actions scheduled workflow | Free (public repo / included minutes) |
 | Hosting | Render.com free web service, or your organization's Azure free tier | Free |
@@ -119,7 +120,90 @@ classifier prompt and validation logic pick up the change automatically.
   files (`dashboard/dist/dashboard`) deployable to any free static host
   (Render static site, Azure Static Web Apps free tier, GitHub Pages).
 
-## 6. Data sensitivity
+## 6. Optional infra — MongoDB, New Relic, Camunda
+
+None of these are required for the server to start. Leave any of them unset and
+the app boots normally, logs one clear warning per unconfigured service, and
+disables only the features that need it:
+
+- **MongoDB unset/unreachable** → `/health` still responds; `/api/tickets/*`
+  and `/api/reports/*` return `503 { error, feature: "disabled" }` instead of
+  crashing; the `sync-tickets`/`categorize-tickets`/`validate-accuracy`/
+  `sync:jira-kb` CLI scripts print a one-line instruction and exit(1) instead
+  of a raw stack trace.
+- **New Relic (`NEW_RELIC_LICENSE_KEY`) unset** → boots with a warning, no APM.
+  If you do set it, also run `npm install newrelic` once (see
+  `src/config/newrelic.ts` for why it isn't a default dependency).
+- **Camunda (`CAMUNDA_BASE_URL`) unset** → boots with a warning;
+  `isCamundaEnabled()` reports `false` everywhere.
+
+Check `isMongoConnected()` (`src/config/db.ts`) / `isCamundaEnabled()`
+(`src/config/camunda.ts`) before writing any new route or script that touches
+one of these services.
+
+## 7. Jira Knowledge-Base sync (RAG context for RCA)
+
+Builds a searchable knowledge base from past Jira tickets, for use as retrieval
+context in Claude-powered RCA answers. Fetches issues matching a configurable
+component + assignee list, normalizes and chunks them, embeds each chunk, and
+upserts into MongoDB Atlas Vector Search.
+
+Requires `MONGODB_URI` (see above) plus the `JIRA_*`/`JIRA_KB_*` and embedding
+vars in `.env.example`. Nothing is hardcoded — project key, component, and
+assignee names are all env-configured, so this is reusable for other ticket
+sets later.
+
+```bash
+cd backend
+cp .env.example .env   # fill in MONGODB_URI, JIRA_*, JIRA_KB_*, and an embedding provider key
+npm run sync:jira-kb
+```
+
+Each run logs issue/chunk/upsert counts, e.g.:
+
+```
+[jiraSync] JQL: project = "SUPPORT" AND assignee in ("...", "...") AND component = "Supplier Profile" ORDER BY updated DESC
+[jiraSync] Issues fetched: 47
+[jiraSync] Chunks to embed: 112
+[jiraSync] Documents embedded: 112
+[jiraSync] Upserted: 112
+```
+
+It's idempotent — re-running upserts by `(ticketKey, chunkIndex)` rather than
+duplicating rows — and safe to re-run on a cron once you're happy with it.
+
+**One manual setup step:** Atlas Vector Search indexes are usually managed
+outside application code. The sync calls `ensureVectorIndex()` as a best-effort
+attempt to create one automatically, but your Atlas tier/permissions may
+require doing this by hand once, in Atlas UI → your cluster → Search →
+Create Search Index → JSON Editor, on the `jira_kb_chunks` collection
+(or whatever `JIRA_KB_COLLECTION` is set to):
+
+```json
+{
+  "name": "jira_kb_vector_index",
+  "type": "vectorSearch",
+  "fields": [
+    { "type": "vector", "path": "embedding", "numDimensions": 1024, "similarity": "cosine" }
+  ]
+}
+```
+
+Use `numDimensions: 1536` if `EMBEDDING_PROVIDER=openai` (text-embedding-3-small).
+
+**Querying the knowledge base** — `searchKnowledgeBase(query, topK)` in
+`src/services/knowledgeBase.ts` embeds the query, runs `$vectorSearch`, and
+returns the top matches ready to drop into a Claude API call as context:
+
+```ts
+import { searchKnowledgeBase } from './services/knowledgeBase';
+
+const matches = await searchKnowledgeBase('supplier bank details sync failure', 5);
+// [{ ticketKey, summary, status, assignee, text, score }, ...]
+// Pass `matches` into your Claude prompt as retrieved context for an RCA answer.
+```
+
+## 8. Data sensitivity
 
 Per the BRD/FSD non-functional requirements: any ticket content used in
 public-facing/portfolio material must be anonymized or replaced with

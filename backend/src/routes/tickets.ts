@@ -3,8 +3,10 @@ import { env } from '../config/env';
 import { syncTicketsFromJira } from '../services/ingestion';
 import { categorizeUncategorizedTickets } from '../services/categorization';
 import { Ticket } from '../models/Ticket';
+import { requireMongo } from '../middleware/requireMongo';
 
 export const ticketsRouter = Router();
+ticketsRouter.use(requireMongo);
 
 // POST /api/tickets/sync - FSD 5.1
 ticketsRouter.post('/sync', async (req, res) => {

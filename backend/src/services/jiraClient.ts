@@ -9,6 +9,20 @@ interface JiraSearchResponse {
   total: number;
 }
 
+interface JiraRawSearchResponse {
+  issues: JiraRawIssue[];
+  startAt: number;
+  maxResults: number;
+  total: number;
+}
+
+/** Generic raw issue shape for callers (like the KB sync) that need fields beyond
+ *  the fixed set JiraIssue/normalizeIssue() were built for. */
+export interface JiraRawIssue {
+  key: string;
+  fields: Record<string, any>;
+}
+
 interface JiraIssue {
   key: string;
   fields: {
@@ -71,6 +85,68 @@ export class JiraClient {
     }
 
     return results;
+  }
+
+  /**
+   * Generic paginated search returning raw issue fields, for callers (the Jira KB
+   * sync) that need fields beyond the fixed set searchAll()/normalizeIssue() use.
+   */
+  async searchAllRaw(jql: string, fields: string[], pageSize = 100): Promise<JiraRawIssue[]> {
+    const results: JiraRawIssue[] = [];
+    let startAt = 0;
+    let total = Infinity;
+
+    while (startAt < total) {
+      const page = await this.searchPageRawWithRetry(jql, startAt, pageSize, fields);
+      total = page.total;
+      startAt += page.issues.length;
+      results.push(...page.issues);
+
+      if (page.issues.length === 0) break;
+    }
+
+    return results;
+  }
+
+  /** Resolves a display name to a Jira accountId via the user search API - names
+   *  alone aren't reliable JQL filters, so callers should resolve before building JQL. */
+  async findAccountIdByDisplayName(displayName: string): Promise<string | null> {
+    const { data } = await this.http.get<{ accountId: string; displayName: string }[]>(
+      '/rest/api/3/user/search',
+      { params: { query: displayName, maxResults: 5 } }
+    );
+
+    const exactMatch = data.find((u) => u.displayName.toLowerCase() === displayName.toLowerCase());
+    return exactMatch?.accountId ?? data[0]?.accountId ?? null;
+  }
+
+  private async searchPageRawWithRetry(
+    jql: string,
+    startAt: number,
+    maxResults: number,
+    fields: string[],
+    attempt = 1
+  ): Promise<JiraRawSearchResponse> {
+    try {
+      const { data } = await this.http.get<JiraRawSearchResponse>('/rest/api/3/search', {
+        params: { jql, startAt, maxResults, fields: fields.join(',') },
+      });
+      return data;
+    } catch (err: any) {
+      const status = err?.response?.status;
+
+      if (status === 401 || status === 403) {
+        throw new Error(`Jira authentication failed (${status}). Check JIRA_EMAIL / JIRA_API_TOKEN.`);
+      }
+
+      if (status === 429 && attempt <= 5) {
+        const delayMs = 1000 * 2 ** attempt;
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        return this.searchPageRawWithRetry(jql, startAt, maxResults, fields, attempt + 1);
+      }
+
+      throw err;
+    }
   }
 
   private async searchPageWithRetry(

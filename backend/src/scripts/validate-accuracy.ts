@@ -8,7 +8,7 @@
  *   SUPPORT-1240,Integration Failure
  */
 import fs from 'fs';
-import { connectDb } from '../config/db';
+import { connectMongoIfConfigured, requireMongoOrExit } from '../config/db';
 import { Ticket } from '../models/Ticket';
 import mongoose from 'mongoose';
 
@@ -47,7 +47,8 @@ async function main() {
   }
 
   const labels = parseCsv(csvPath);
-  await connectDb();
+  await connectMongoIfConfigured();
+  requireMongoOrExit('validate-accuracy');
 
   let correct = 0;
   const mismatches: { key: string; expected: string; actual: string | null }[] = [];
