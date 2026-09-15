@@ -1,0 +1,35 @@
+{
+  "name": "smart-rca-backend",
+  "version": "1.0.0",
+  "description": "Supplier Module Query Categorization Assistant - backend (Jira ingestion, LLM categorization, aggregation API)",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "sync-tickets": "ts-node src/scripts/sync-tickets.ts",
+    "categorize-tickets": "ts-node src/scripts/categorize-tickets.ts",
+    "validate-accuracy": "ts-node src/scripts/validate-accuracy.ts",
+    "test": "jest",
+    "lint": "eslint 'src/**/*.ts'"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "axios": "^1.7.9",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mongoose": "^8.9.5"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.10.5",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.7.3"
+  }
+}

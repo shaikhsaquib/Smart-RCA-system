@@ -1,0 +1,73 @@
+.table-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.filters select,
+.filters button {
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #d0d5dd;
+  font-size: 0.85rem;
+}
+
+.filters button {
+  margin-left: auto;
+  background: #4c6ef5;
+  color: #fff;
+  border-color: #4c6ef5;
+  cursor: pointer;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid #eee;
+}
+
+.summary {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  background: #eef1ff;
+  color: #4c6ef5;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+
+.confidence-high {
+  color: #12b886;
+}
+.confidence-medium {
+  color: #fab005;
+}
+.confidence-low {
+  color: #e64980;
+}
+
+.empty {
+  text-align: center;
+  color: #888;
+  padding: 1.5rem;
+}

@@ -1,0 +1,47 @@
+<div class="page">
+  <header>
+    <h1>{{ title }}</h1>
+    <div class="actions">
+      <input type="date" [(ngModel)]="dateFrom" (change)="loadDashboard()" />
+      <span>to</span>
+      <input type="date" [(ngModel)]="dateTo" (change)="loadDashboard()" />
+      <button type="button" (click)="onSync()" [disabled]="syncing">
+        {{ syncing ? 'Syncing…' : 'Sync from Jira' }}
+      </button>
+      <button type="button" (click)="onCategorize()" [disabled]="categorizing">
+        {{ categorizing ? 'Categorizing…' : 'Categorize new tickets' }}
+      </button>
+    </div>
+  </header>
+
+  <div class="error" *ngIf="error">{{ error }}</div>
+
+  <section class="stats" *ngIf="summary as s">
+    <div class="stat-card">
+      <div class="stat-value">{{ s.totalTickets }}</div>
+      <div class="stat-label">Total categorized tickets</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ s.byCategory.length }}</div>
+      <div class="stat-label">Categories represented</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ (s.lowConfidenceRate * 100) | number: '1.0-1' }}%</div>
+      <div class="stat-label">Low-confidence / Uncategorized rate</div>
+    </div>
+  </section>
+
+  <section class="charts" *ngIf="summary as s">
+    <app-category-chart [data]="s.byCategory"></app-category-chart>
+    <app-trend-chart [data]="s.trend"></app-trend-chart>
+  </section>
+
+  <section>
+    <app-ticket-table
+      [tickets]="tickets"
+      [categories]="categories"
+      (filtersChange)="loadTickets($event)"
+      (exportRequested)="onExport()"
+    ></app-ticket-table>
+  </section>
+</div>

@@ -1,0 +1,72 @@
+{
+  "confidenceThreshold": "medium",
+  "categories": [
+    {
+      "name": "Data Correction",
+      "definition": "Request to fix/update incorrect supplier data (e.g., wrong bank details, address, tax ID).",
+      "examples": [
+        "Supplier bank account number is incorrect in the system, needs correction",
+        "Please update the registered address for supplier ABC Corp",
+        "Tax ID on file for supplier is outdated and needs to be fixed"
+      ]
+    },
+    {
+      "name": "Access/Permission",
+      "definition": "User cannot access supplier record/module, or gets a permission-related error.",
+      "examples": [
+        "Getting 'Access Denied' when trying to open the Supplier module",
+        "User cannot view supplier records assigned to their business unit",
+        "Need permission to edit supplier records under my role"
+      ]
+    },
+    {
+      "name": "Integration Failure",
+      "definition": "Sync/integration issue between Supplier module and another system (e.g., SAP, ERP).",
+      "examples": [
+        "Supplier records not syncing to SAP after nightly batch job",
+        "ERP integration failing with timeout error for supplier updates",
+        "New supplier created in portal is missing in downstream ERP system"
+      ]
+    },
+    {
+      "name": "Configuration Query",
+      "definition": "Question about how a setting/workflow is configured, not a defect.",
+      "examples": [
+        "How is the supplier approval workflow configured for our region?",
+        "What triggers the auto-approval rule for low-risk suppliers?",
+        "Is it possible to configure a custom approval chain for new suppliers?"
+      ]
+    },
+    {
+      "name": "Documentation/How-To",
+      "definition": "User asking how to perform an action, not reporting an error.",
+      "examples": [
+        "How do I add a new supplier contact in the portal?",
+        "Steps to submit a supplier onboarding request",
+        "Where can I find the supplier compliance document upload option?"
+      ]
+    },
+    {
+      "name": "Bug",
+      "definition": "Genuine defect/unexpected system behavior not covered by the other categories.",
+      "examples": [
+        "Supplier search returns duplicate rows for the same supplier ID",
+        "Clicking 'Save' on supplier profile throws a 500 error",
+        "Supplier status shows 'Active' even after being deactivated"
+      ]
+    },
+    {
+      "name": "Duplicate/Spam",
+      "definition": "Duplicate of an existing ticket, or not a genuine issue.",
+      "examples": [
+        "Ticket is an exact duplicate of SUPPORT-1050 raised earlier today",
+        "Same request submitted twice by mistake"
+      ]
+    },
+    {
+      "name": "Uncategorized",
+      "definition": "Fallback when confidence is below threshold or the ticket doesn't clearly fit any category above. Never chosen directly by the classifier - only assigned by the system fallback logic.",
+      "examples": []
+    }
+  ]
+}

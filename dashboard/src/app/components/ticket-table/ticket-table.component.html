@@ -1,0 +1,52 @@
+<div class="table-card">
+  <div class="filters">
+    <select [(ngModel)]="filters.category" (ngModelChange)="onFilterChange()">
+      <option [ngValue]="undefined">All categories</option>
+      <option *ngFor="let c of categories" [value]="c">{{ c }}</option>
+    </select>
+
+    <select [(ngModel)]="filters.priority" (ngModelChange)="onFilterChange()">
+      <option [ngValue]="undefined">All priorities</option>
+      <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
+    </select>
+
+    <select [(ngModel)]="filters.confidence" (ngModelChange)="onFilterChange()">
+      <option [ngValue]="undefined">All confidence levels</option>
+      <option *ngFor="let c of confidenceLevels" [value]="c">{{ c }}</option>
+    </select>
+
+    <button type="button" (click)="exportRequested.emit()">Export CSV</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Key</th>
+        <th>Summary</th>
+        <th>Category</th>
+        <th>Confidence</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let t of tickets">
+        <td>{{ t.key }}</td>
+        <td class="summary" [title]="t.rationale || ''">{{ t.summary }}</td>
+        <td><span class="badge">{{ t.category || 'Uncategorized' }}</span></td>
+        <td>
+          <span class="confidence" [class]="'confidence-' + (t.confidence || 'low')">
+            {{ t.confidence || 'n/a' }}
+          </span>
+        </td>
+        <td>{{ t.priority }}</td>
+        <td>{{ t.status }}</td>
+        <td>{{ t.createdAt | date: 'mediumDate' }}</td>
+      </tr>
+      <tr *ngIf="tickets.length === 0">
+        <td colspan="7" class="empty">No tickets match the current filters.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
