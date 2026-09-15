@@ -25,10 +25,17 @@ describe('chunkText', () => {
 });
 
 describe('buildJql', () => {
-  it('builds JQL with quoted project/component and an assignee accountId list', () => {
-    const jql = buildJql('SUPPORT', ['acc-1', 'acc-2'], 'Supplier Profile');
+  it('builds JQL with a standard component field by default', () => {
+    const jql = buildJql('SUPPORT', ['acc-1', 'acc-2'], 'component', 'Supplier Profile');
     expect(jql).toBe(
       'project = "SUPPORT" AND assignee in ("acc-1", "acc-2") AND component = "Supplier Profile" ORDER BY updated DESC'
+    );
+  });
+
+  it('supports a custom field reference as the match field (e.g. GEP\'s Actionable-Team)', () => {
+    const jql = buildJql('PLS', ['acc-1'], 'cf[15279]', 'Supplier Profile');
+    expect(jql).toBe(
+      'project = "PLS" AND assignee in ("acc-1") AND cf[15279] = "Supplier Profile" ORDER BY updated DESC'
     );
   });
 });

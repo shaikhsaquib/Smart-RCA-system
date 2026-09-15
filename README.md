@@ -145,13 +145,24 @@ one of these services.
 
 Builds a searchable knowledge base from past Jira tickets, for use as retrieval
 context in Claude-powered RCA answers. Fetches issues matching a configurable
-component + assignee list, normalizes and chunks them, embeds each chunk, and
+field/value + assignee list, normalizes and chunks them, embeds each chunk, and
 upserts into MongoDB Atlas Vector Search.
 
 Requires `MONGODB_URI` (see above) plus the `JIRA_*`/`JIRA_KB_*` and embedding
-vars in `.env.example`. Nothing is hardcoded — project key, component, and
-assignee names are all env-configured, so this is reusable for other ticket
-sets later.
+vars in `.env.example`. Nothing is hardcoded — project key, match field, match
+value, and assignee names are all env-configured, so this is reusable for
+other ticket sets later.
+
+**On GEP's Jira specifically:** "Supplier Profile" is not a real `component` or
+label on any ticket — confirmed live against `smartbygep.atlassian.net` — it's
+a value of a custom field called **Actionable-Team** (`customfield_15279`,
+`cf[15279]` in JQL), and it's only meaningful inside the **`PLS`** project
+("Project-LEO-Supplier"); the same field holds unrelated team names on tickets
+in shared projects like `INC`. `.env.example` is set to those confirmed
+values (`JIRA_KB_PROJECT_KEY=PLS`, `JIRA_KB_MATCH_FIELD=cf[15279]`,
+`JIRA_KB_COMPONENT=Supplier Profile`). If you point this at a different Jira
+project/instance that does use a real `component` field, leave
+`JIRA_KB_MATCH_FIELD` unset — it defaults to `component`.
 
 ```bash
 cd backend

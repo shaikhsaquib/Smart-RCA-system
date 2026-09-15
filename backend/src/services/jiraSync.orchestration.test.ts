@@ -6,6 +6,7 @@ jest.mock('../config/db', () => ({
 const mockEnv: any = {
   jiraKb: {
     projectKey: 'SUPPORT',
+    matchField: 'component',
     component: 'Supplier Profile',
     assigneeNames: ['Saquib Shaikh'],
     chunkSizeChars: 1500,

@@ -57,6 +57,12 @@ export const env = {
   // --- Jira Knowledge-Base sync (Task 2) ---
   jiraKb: {
     projectKey: get('JIRA_KB_PROJECT_KEY'),
+    // The JQL field reference to match JIRA_KB_COMPONENT against. Confirmed against
+    // GEP's actual Jira: "Supplier Profile" is NOT a standard component/label on any
+    // real ticket - it's a value of a custom single-select field ("Actionable-Team"),
+    // referenced in JQL as cf[15279]. Defaults to the standard "component" field for
+    // any other Jira instance where that assumption from the FSD does hold.
+    matchField: get('JIRA_KB_MATCH_FIELD') || 'component',
     component: get('JIRA_KB_COMPONENT'),
     assigneeNames: getList('JIRA_KB_ASSIGNEES'),
     collectionName: get('JIRA_KB_COLLECTION') || 'jira_kb_chunks',

@@ -1,13 +1,17 @@
 /**
  * Jira -> Knowledge Base sync (Task 2).
  *
- * Fetches Jira issues matching a configurable component and assignee list,
+ * Fetches Jira issues matching a configurable field/value and assignee list,
  * normalizes + chunks + embeds them, and upserts the result into MongoDB Atlas
  * Vector Search so they can be retrieved as RAG context for RCA answers.
  *
- * Nothing here is hardcoded: the project key, component, and assignee names all
- * come from env (JIRA_KB_PROJECT_KEY / JIRA_KB_COMPONENT / JIRA_KB_ASSIGNEES),
- * so this is reusable for other ticket sets later.
+ * Nothing here is hardcoded: the project key, match field, match value, and
+ * assignee names all come from env (JIRA_KB_PROJECT_KEY / JIRA_KB_MATCH_FIELD /
+ * JIRA_KB_COMPONENT / JIRA_KB_ASSIGNEES), so this is reusable for other ticket
+ * sets later. The match field is configurable rather than a hardcoded
+ * `component = ...` because on GEP's actual Jira, "Supplier Profile" turned out
+ * to live in a custom field ("Actionable-Team", cf[15279]), not a component or
+ * label - see env.ts for how that was confirmed.
  */
 import { isMongoConnected } from '../config/db';
 import { env } from '../config/env';
@@ -48,7 +52,12 @@ export interface JiraSyncResult {
   upserted: number;
 }
 
-function requireKbConfig(): { projectKey: string; component: string; assigneeNames: string[] } {
+function requireKbConfig(): {
+  projectKey: string;
+  matchField: string;
+  component: string;
+  assigneeNames: string[];
+} {
   const missing: string[] = [];
   if (!env.jiraKb.projectKey) missing.push('JIRA_KB_PROJECT_KEY');
   if (!env.jiraKb.component) missing.push('JIRA_KB_COMPONENT');
@@ -60,9 +69,16 @@ function requireKbConfig(): { projectKey: string; component: string; assigneeNam
 
   return {
     projectKey: env.jiraKb.projectKey as string,
+    matchField: env.jiraKb.matchField,
     component: env.jiraKb.component as string,
     assigneeNames: env.jiraKb.assigneeNames,
   };
+}
+
+/** cf[12345] -> "customfield_12345", so the sync also requests that field from Jira. */
+function customFieldIdFromMatchField(matchField: string): string | null {
+  const match = /^cf\[(\d+)\]$/.exec(matchField.trim());
+  return match ? `customfield_${match[1]}` : null;
 }
 
 /** Resolves each display name to a Jira accountId - names alone aren't reliable JQL filters. */
@@ -85,9 +101,9 @@ export async function resolveAssigneeAccountIds(
   return { accountIds, unresolved };
 }
 
-export function buildJql(projectKey: string, accountIds: string[], component: string): string {
+export function buildJql(projectKey: string, accountIds: string[], matchField: string, matchValue: string): string {
   const accountIdList = accountIds.map((id) => `"${id}"`).join(', ');
-  return `project = "${projectKey}" AND assignee in (${accountIdList}) AND component = "${component}" ORDER BY updated DESC`;
+  return `project = "${projectKey}" AND assignee in (${accountIdList}) AND ${matchField} = "${matchValue}" ORDER BY updated DESC`;
 }
 
 function flattenComments(commentField: unknown): string {
@@ -150,7 +166,7 @@ export async function syncJiraKnowledgeBase(): Promise<JiraSyncResult> {
     );
   }
 
-  const { projectKey, component, assigneeNames } = requireKbConfig();
+  const { projectKey, matchField, component, assigneeNames } = requireKbConfig();
   const jira = new JiraClient();
 
   const { accountIds, unresolved } = await resolveAssigneeAccountIds(jira, assigneeNames);
@@ -161,10 +177,15 @@ export async function syncJiraKnowledgeBase(): Promise<JiraSyncResult> {
     throw new Error('None of the configured JIRA_KB_ASSIGNEES could be resolved to a Jira accountId.');
   }
 
-  const jql = buildJql(projectKey, accountIds, component);
+  const jql = buildJql(projectKey, accountIds, matchField, component);
   console.log(`[jiraSync] JQL: ${jql}`);
 
-  const rawIssues = await jira.searchAllRaw(jql, KB_SEARCH_FIELDS);
+  // If matchField references a custom field (cf[12345]), also request it so it's
+  // available on the raw issue - useful for audit/debugging, not required for normalization.
+  const customFieldId = customFieldIdFromMatchField(matchField);
+  const searchFields = customFieldId ? [...KB_SEARCH_FIELDS, customFieldId] : KB_SEARCH_FIELDS;
+
+  const rawIssues = await jira.searchAllRaw(jql, searchFields);
   console.log(`[jiraSync] Issues fetched: ${rawIssues.length}`);
 
   const issues = rawIssues.map(normalizeKbIssue);
