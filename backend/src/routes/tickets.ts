@@ -3,9 +3,25 @@ import { env } from '../config/env';
 import { syncTicketsFromJira } from '../services/ingestion';
 import { categorizeUncategorizedTickets } from '../services/categorization';
 import { Ticket } from '../models/Ticket';
+import { JiraClient } from '../services/jiraClient';
 import { requireMongo } from '../middleware/requireMongo';
 
 export const ticketsRouter = Router();
+
+// POST /api/tickets/jira-test - no-Mongo connectivity check. Registered before the
+// requireMongo guard below so it works even without MONGODB_URI configured: fetches
+// from Jira and returns the tickets directly, nothing is written anywhere.
+ticketsRouter.post('/jira-test', async (req, res) => {
+  try {
+    const jira = new JiraClient();
+    const jql = req.body?.jql || env.jiraDefaultJql;
+    const tickets = await jira.searchAll(jql);
+    res.json({ jql, ticketsFetched: tickets.length, tickets: tickets.slice(0, 20) });
+  } catch (err: any) {
+    res.status(502).json({ error: err.message || 'Jira connectivity test failed' });
+  }
+});
+
 ticketsRouter.use(requireMongo);
 
 // POST /api/tickets/sync - FSD 5.1

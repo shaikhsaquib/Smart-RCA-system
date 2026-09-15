@@ -11,6 +11,7 @@
     "categorize-tickets": "ts-node src/scripts/categorize-tickets.ts",
     "validate-accuracy": "ts-node src/scripts/validate-accuracy.ts",
     "sync:jira-kb": "ts-node src/scripts/sync-jira-kb.ts",
+    "test:jira": "ts-node src/scripts/test-jira.ts",
     "test": "jest",
     "lint": "eslint 'src/**/*.ts'"
   },

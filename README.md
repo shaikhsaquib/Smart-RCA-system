@@ -66,6 +66,23 @@ npm install
 npm run dev             # starts the API on http://localhost:3000
 ```
 
+### Testing Jira connectivity before setting up MongoDB
+
+If you only have `JIRA_BASE_URL`/`JIRA_EMAIL`/`JIRA_API_TOKEN` set and want to
+confirm they (and your JQL) work before touching Mongo, use the no-Mongo test
+path — nothing is written anywhere, it just fetches and prints/returns tickets:
+
+```bash
+npm run test:jira                          # uses JIRA_DEFAULT_JQL from .env
+npm run test:jira -- "project = PLS ORDER BY updated DESC"
+
+# or via the API (works even with MONGODB_URI unset):
+curl -X POST http://localhost:3000/api/tickets/jira-test -H "Content-Type: application/json" -d '{}'
+```
+
+Everything else under `/api/tickets/*` (`/sync`, `/categorize`, `GET /`) does
+need MongoDB, since that's where results get stored — see section 6 below.
+
 Run a batch sync + categorization manually:
 
 ```bash
