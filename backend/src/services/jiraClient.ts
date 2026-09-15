@@ -23,7 +23,7 @@ interface JiraIssue {
   };
 }
 
-function extractPlainText(description: unknown): string {
+export function extractPlainText(description: unknown): string {
   if (!description) return '';
   if (typeof description === 'string') return description;
 
